@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/hamcha/clessy/tg"
+	"github.com/hamcha/tg"
 )
 
 var clients []net.Conn

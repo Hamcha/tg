@@ -14,7 +14,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/hamcha/clessy/tg"
+	"github.com/hamcha/tg"
 )
 
 // APIEndpoint is Telegram's current Bot API base url endpoint

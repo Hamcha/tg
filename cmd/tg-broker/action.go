@@ -3,7 +3,7 @@ package main
 import (
 	"net"
 
-	"github.com/hamcha/clessy/tg"
+	"github.com/hamcha/tg"
 )
 
 func executeClientCommand(action tg.ClientCommand, client net.Conn) {
