@@ -17,10 +17,10 @@ const (
 // BrokerUpdate is what is sent by the broker as update
 type BrokerUpdate struct {
 	Type     BrokerUpdateType
-	Callback *int        `json:",omitempty"`
-	Error    *string     `json:",omitempty"`
-	Message  *APIMessage `json:",omitempty"`
-	Bytes    *string     `json:",omitempty"`
+	Callback *int       `json:",omitempty"`
+	Error    *string    `json:",omitempty"`
+	Data     *APIUpdate `json:",omitempty"`
+	Bytes    *string    `json:",omitempty"`
 }
 
 // ClientCommandType distinguishes requests sent by clients to the broker
@@ -41,6 +41,9 @@ const (
 
 	// CmdSendChatAction requests the broker to set a chat action (typing, etc.)
 	CmdSendChatAction ClientCommandType = "sendChatAction"
+
+	// CmdAnswerInlineQuery requests the broker sends results of an inline query
+	CmdAnswerInlineQuery ClientCommandType = "answerInlineQuery"
 )
 
 // ClientTextMessageData is the required data for a CmdSendTextMessage request
@@ -98,6 +101,18 @@ type ClientCommand struct {
 	PhotoData          *ClientPhotoData          `json:",omitempty"`
 	ForwardMessageData *ClientForwardMessageData `json:",omitempty"`
 	ChatActionData     *ClientChatActionData     `json:",omitempty"`
+	InlineQueryResults *InlineQueryResponse      `json:",omitempty"`
 	FileRequestData    *FileRequestData          `json:",omitempty"`
 	Callback           *int                      `json:",omitempty"`
+}
+
+// InlineQueryResponse is the response to an inline query
+type InlineQueryResponse struct {
+	QueryID    string
+	Results    []interface{}
+	CacheTime  *int   `json:",omitempty"`
+	IsPersonal bool   `json:",omitempty"`
+	NextOffset string `json:",omitempty"`
+	PMText     string `json:",omitempty"`
+	PMParam    string `json:",omitempty"`
 }

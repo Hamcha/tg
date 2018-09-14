@@ -1,4 +1,4 @@
-package main
+package tg
 
 import (
 	"bytes"
@@ -13,20 +13,21 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/hamcha/tg"
 )
 
 // APIEndpoint is Telegram's current Bot API base url endpoint
 const APIEndpoint = "https://api.telegram.org/"
+
+// WebhookHandler is a function that handles updates
+type WebhookHandler func(APIUpdate)
 
 // Telegram is the API client for the Telegram Bot API
 type Telegram struct {
 	Token string
 }
 
-// mkAPI creates a Telegram instance from a Bot API token
-func mkAPI(token string) *Telegram {
+// MakeAPIClient creates a Telegram instance from a Bot API token
+func MakeAPIClient(token string) *Telegram {
 	tg := new(Telegram)
 	tg.Token = token
 	return tg
@@ -37,7 +38,7 @@ func (t Telegram) SetWebhook(webhook string) {
 	resp, err := http.PostForm(t.apiURL("setWebhook"), url.Values{"url": {webhook}})
 	if !checkerr("SetWebhook/http.PostForm", err) {
 		defer resp.Body.Close()
-		var result tg.APIResponse
+		var result APIResponse
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		if err != nil {
 			log.Println("[SetWebhook] Could not read reply: " + err.Error())
@@ -52,8 +53,27 @@ func (t Telegram) SetWebhook(webhook string) {
 	}
 }
 
+// HandleWebhook is a webhook HTTP handler for standalone bots
+func (t Telegram) HandleWebhook(bind string, webhook string, handler WebhookHandler) error {
+	whmux := http.NewServeMux()
+	whmux.HandleFunc(webhook, func(rw http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+
+		// Re-encode request to ensure conformity
+		var update APIUpdate
+		err := json.NewDecoder(req.Body).Decode(&update)
+		if err != nil {
+			log.Println("[webhook] Received incorrect request: " + err.Error())
+			return
+		}
+
+		handler(update)
+	})
+	return http.ListenAndServe(bind, whmux)
+}
+
 // SendTextMessage sends an HTML-styled text message to a specified chat
-func (t Telegram) SendTextMessage(data tg.ClientTextMessageData) {
+func (t Telegram) SendTextMessage(data ClientTextMessageData) {
 	postdata := url.Values{
 		"chat_id":    {strconv.FormatInt(data.ChatID, 10)},
 		"text":       {data.Text},
@@ -67,7 +87,8 @@ func (t Telegram) SendTextMessage(data tg.ClientTextMessageData) {
 	checkerr("SendTextMessage/http.PostForm", err)
 }
 
-func (t Telegram) SendPhoto(data tg.ClientPhotoData) {
+// SendPhoto sends a picture to a chat as a photo
+func (t Telegram) SendPhoto(data ClientPhotoData) {
 	// Decode photo from b64
 	photolen := base64.StdEncoding.DecodedLen(len(data.Bytes))
 	photobytes := make([]byte, photolen)
@@ -114,7 +135,8 @@ func (t Telegram) SendPhoto(data tg.ClientPhotoData) {
 	checkerr("SendPhoto/http.Do", err)
 }
 
-func (t Telegram) ForwardMessage(data tg.ClientForwardMessageData) {
+// ForwardMessage forwards an existing message to a chat
+func (t Telegram) ForwardMessage(data ClientForwardMessageData) {
 	postdata := url.Values{
 		"chat_id":      {strconv.FormatInt(data.ChatID, 10)},
 		"from_chat_id": {strconv.FormatInt(data.FromChatID, 10)},
@@ -125,7 +147,8 @@ func (t Telegram) ForwardMessage(data tg.ClientForwardMessageData) {
 	checkerr("ForwardMessage/http.PostForm", err)
 }
 
-func (t Telegram) SendChatAction(data tg.ClientChatActionData) {
+// SendChatAction sends a 5 second long action (X is writing, sending a photo ecc.)
+func (t Telegram) SendChatAction(data ClientChatActionData) {
 	postdata := url.Values{
 		"chat_id": {strconv.FormatInt(data.ChatID, 10)},
 		"action":  {string(data.Action)},
@@ -135,13 +158,43 @@ func (t Telegram) SendChatAction(data tg.ClientChatActionData) {
 	checkerr("SendChatAction/http.PostForm", err)
 }
 
+// AnswerInlineQuery replies to an inline query
+func (t Telegram) AnswerInlineQuery(data InlineQueryResponse) {
+	jsonresults, err := json.Marshal(data.Results)
+	if checkerr("AnswerInlineQuery/json.Marshal", err) {
+		return
+	}
+	postdata := url.Values{
+		"inline_query_id": {data.QueryID},
+		"results":         {string(jsonresults)},
+	}
+	if data.CacheTime != nil {
+		postdata["cache_time"] = []string{strconv.Itoa(*data.CacheTime)}
+	}
+	if data.IsPersonal {
+		postdata["is_personal"] = []string{"true"}
+	}
+	if data.NextOffset != "" {
+		postdata["next_offset"] = []string{data.NextOffset}
+	}
+	if data.PMText != "" {
+		postdata["switch_pm_text"] = []string{data.PMText}
+	}
+	if data.PMParam != "" {
+		postdata["switch_pm_parameter"] = []string{data.PMParam}
+	}
+
+	_, err = http.PostForm(t.apiURL("answerInlineQuery"), postdata)
+	checkerr("AnswerInlineQuery/http.PostForm", err)
+}
+
 // GetFile sends a "getFile" API call to Telegram's servers and fetches the file
 // specified afterward. The file will be then send back to the client that requested it
 // with the specified callback id.
-func (t Telegram) GetFile(data tg.FileRequestData, client net.Conn, callback int) {
+func (t Telegram) GetFile(data FileRequestData, client net.Conn, callback int) {
 	fail := func(msg string) {
-		errmsg, _ := json.Marshal(tg.BrokerUpdate{
-			Type:     tg.BError,
+		errmsg, _ := json.Marshal(BrokerUpdate{
+			Type:     BError,
 			Error:    &msg,
 			Callback: &callback,
 		})
@@ -159,8 +212,8 @@ func (t Telegram) GetFile(data tg.FileRequestData, client net.Conn, callback int
 	defer resp.Body.Close()
 
 	var filespecs = struct {
-		Ok     bool        `json:"ok"`
-		Result *tg.APIFile `json:"result,omitempty"`
+		Ok     bool     `json:"ok"`
+		Result *APIFile `json:"result,omitempty"`
 	}{}
 	err = json.NewDecoder(resp.Body).Decode(&filespecs)
 	if checkerr("GetFile/json.Decode", err) {
@@ -194,8 +247,8 @@ func (t Telegram) GetFile(data tg.FileRequestData, client net.Conn, callback int
 	}
 	b64data := base64.StdEncoding.EncodeToString(rawdata)
 
-	clientmsg, err := json.Marshal(tg.BrokerUpdate{
-		Type:     tg.BFile,
+	clientmsg, err := json.Marshal(BrokerUpdate{
+		Type:     BFile,
 		Bytes:    &b64data,
 		Callback: &callback,
 	})

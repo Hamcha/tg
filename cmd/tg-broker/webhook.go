@@ -20,8 +20,7 @@ func webhook(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	data, err := json.Marshal(tg.BrokerUpdate{
-		Type:     tg.BMessage,
-		Message:  &(update.Message),
+		Data:     update,
 		Callback: nil,
 	})
 	if err != nil {

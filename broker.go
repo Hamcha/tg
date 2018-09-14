@@ -86,6 +86,14 @@ func (b *Broker) SendChatAction(chat *APIChat, action ChatAction) {
 	})
 }
 
+// AnswerInlineQuery sends the results of an inline query
+func (b *Broker) AnswerInlineQuery(response InlineQueryResponse) {
+	b.sendCmd(ClientCommand{
+		Type:               CmdAnswerInlineQuery,
+		InlineQueryResults: &response,
+	})
+}
+
 // GetFile sends a file retrieval request to the Broker.
 // This function is asynchronous as data will be delivered to the given callback.
 func (b *Broker) GetFile(fileID string, fn BrokerCallback) int {

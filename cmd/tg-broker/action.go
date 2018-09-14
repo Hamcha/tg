@@ -23,5 +23,8 @@ func executeClientCommand(action tg.ClientCommand, client net.Conn) {
 	case tg.CmdSendChatAction:
 		data := *(action.ChatActionData)
 		api.SendChatAction(data)
+	case tg.CmdAnswerInlineQuery:
+		data := *(action.InlineQueryResults)
+		api.AnswerInlineQuery(data)
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // UpdateHandler is an update handler for webhook updates
-type UpdateHandler func(broker *Broker, message APIMessage)
+type UpdateHandler func(broker *Broker, data APIUpdate)
 
 // BrokerCallback is a callback for broker responses to client requests
 type BrokerCallback func(broker *Broker, update BrokerUpdate)
@@ -50,7 +50,7 @@ func RunBrokerClient(broker *Broker, updateFn UpdateHandler) error {
 
 		if update.Callback == nil {
 			// It's a generic message: dispatch to UpdateHandler
-			go updateFn(broker, *(update.Message))
+			go updateFn(broker, *(update.Data))
 		} else {
 			// It's a response to a request: retrieve callback and call it
 			go broker.SpliceCallback(*(update.Callback))(broker, update)

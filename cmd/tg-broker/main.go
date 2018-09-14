@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/hamcha/tg"
 )
 
 // The Config data (parsed from JSON)
@@ -23,7 +25,7 @@ func assert(err error) {
 	}
 }
 
-var api *Telegram
+var api *tg.Telegram
 
 func main() {
 	cfgpath := flag.String("config", "config.json", "Path to configuration file")
@@ -37,7 +39,7 @@ func main() {
 	assert(err)
 
 	// Create Telegram API object
-	api = mkAPI(config.Token)
+	api = tg.MakeAPIClient(config.Token)
 
 	// Setup webhook handler
 	go func() {

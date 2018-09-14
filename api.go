@@ -135,8 +135,9 @@ type APILocation struct {
 
 // APIUpdate represents the "Update" JSON structure
 type APIUpdate struct {
-	UpdateID int64      `json:"update_id"`
-	Message  APIMessage `json:"message"`
+	UpdateID int64           `json:"update_id"`
+	Message  *APIMessage     `json:"message"`
+	Inline   *APIInlineQuery `json:"inline_query,omitempty"`
 }
 
 // APIFile represents the "File" JSON structure
@@ -151,4 +152,28 @@ type APIResponse struct {
 	Ok          bool    `json:"ok"`
 	ErrCode     *int    `json:"error_code,omitempty"`
 	Description *string `json:"description,omitempty"`
+}
+
+// APIInlineQuery represents an inline query from telegram
+type APIInlineQuery struct {
+	QueryID  string       `json:"id"`
+	From     APIUser      `json:"from"`
+	Location *APILocation `json:"location,omitempty"`
+	Query    string       `json:"query"`
+	Offset   string       `json:"offset"`
+}
+
+// APIInlineQueryResultPhoto is an image result for an inline query
+type APIInlineQueryResultPhoto struct {
+	Type        string `json:"type"`
+	ResultID    string `json:"id"`
+	PhotoURL    string `json:"photo_url"`
+	ThumbURL    string `json:"thumb_url"`
+	Width       int    `json:"photo_width,omitempty"`
+	Height      int    `json:"photo_height,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	Caption     string `json:"caption,omitempty"`
+	ParseMode   string `json:"parse_mode,omitempty"`
+	//TODO replyMarkup / inputMessageContent
 }
