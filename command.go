@@ -109,7 +109,7 @@ type ClientCommand struct {
 // InlineQueryResponse is the response to an inline query
 type InlineQueryResponse struct {
 	QueryID    string
-	Results    []interface{}
+	Results    interface{}
 	CacheTime  *int   `json:",omitempty"`
 	IsPersonal bool   `json:",omitempty"`
 	NextOffset string `json:",omitempty"`
