@@ -44,6 +44,9 @@ const (
 
 	// CmdAnswerInlineQuery requests the broker sends results of an inline query
 	CmdAnswerInlineQuery ClientCommandType = "answerInlineQuery"
+
+	// CmdSendAlbum requests the broker sends an album of photos or videos
+	CmdSendAlbum ClientCommandType = "sendAlbum"
 )
 
 // ClientTextMessageData is the required data for a CmdSendTextMessage request
@@ -73,6 +76,14 @@ type ClientForwardMessageData struct {
 type ClientChatActionData struct {
 	ChatID int64
 	Action ChatAction
+}
+
+// ClientAlbumData is the required data for a CmdSendAlbum request
+type ClientAlbumData struct {
+	ChatID  int64
+	Media   interface{}
+	Silent  bool
+	ReplyID *int64 `json:",omitempty"`
 }
 
 // ChatAction is the action name for CmdSendChatAction requests

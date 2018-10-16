@@ -165,15 +165,34 @@ type APIInlineQuery struct {
 
 // APIInlineQueryResultPhoto is an image result for an inline query
 type APIInlineQueryResultPhoto struct {
-	Type        string `json:"type"`
-	ResultID    string `json:"id"`
-	PhotoURL    string `json:"photo_url"`
-	ThumbURL    string `json:"thumb_url"`
-	Width       int    `json:"photo_width,omitempty"`
-	Height      int    `json:"photo_height,omitempty"`
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
-	Caption     string `json:"caption,omitempty"`
-	ParseMode   string `json:"parse_mode,omitempty"`
-	//TODO replyMarkup / inputMessageContent
+	Type        string                   `json:"type"`
+	ResultID    string                   `json:"id"`
+	PhotoURL    string                   `json:"photo_url"`
+	ThumbURL    string                   `json:"thumb_url"`
+	Width       int                      `json:"photo_width,omitempty"`
+	Height      int                      `json:"photo_height,omitempty"`
+	Title       string                   `json:"title,omitempty"`
+	Description string                   `json:"description,omitempty"`
+	Caption     string                   `json:"caption,omitempty"`
+	ParseMode   string                   `json:"parse_mode,omitempty"`
+	ReplyMarkup *APIInlineKeyboardMarkup `json:"reply_markup,omitempty"`
+	//TODO inputMessageContent
+}
+
+type APIInlineKeyboardMarkup struct {
+	InlineKeyboard interface{} `json:"inline_keyboard"`
+}
+
+// APIInlineKeyboardButton is an inline message button
+type APIInlineKeyboardButton struct {
+	Text string `json:"text"`
+	URL  string `json:"url,omitempty"`
+}
+
+// APIInputMediaPhoto is a media photo element (already on telegram servers or via HTTP URL) for albums and other cached pictures
+type APIInputMediaPhoto struct {
+	Type      string `json:"type"`
+	Media     string `json:"media"`
+	Caption   string `json:"caption,omitempty"`
+	ParseMode string `json:"parse_mode,omitempty"`
 }

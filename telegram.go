@@ -18,6 +18,11 @@ import (
 // APIEndpoint is Telegram's current Bot API base url endpoint
 const APIEndpoint = "https://api.telegram.org/"
 
+var (
+	// ErrMalformed represents an error that was encountered while processing the request (json encode/decode error etc)
+	ErrMalformed = errors.New("Error while handling request")
+)
+
 // WebhookHandler is a function that handles updates
 type WebhookHandler func(APIUpdate)
 
@@ -135,6 +140,27 @@ func (t Telegram) SendPhoto(data ClientPhotoData) {
 	checkerr("SendPhoto/http.Do", err)
 }
 
+// SendAlbum sends an album of photos or videos
+func (t Telegram) SendAlbum(data ClientAlbumData) {
+	jsonmedia, err := json.Marshal(data.Media)
+	if err != nil {
+		checkerr("SendAlbum/json.Marshal", err)
+	}
+	postdata := url.Values{
+		"chat_id": {strconv.FormatInt(data.ChatID, 10)},
+		"media":   {string(jsonmedia)},
+	}
+	if data.Silent {
+		postdata["disable_notification"] = []string{"true"}
+	}
+	if data.ReplyID != nil {
+		postdata["reply_to_message_id"] = []string{strconv.FormatInt(*(data.ReplyID), 10)}
+	}
+
+	_, err = http.PostForm(t.apiURL("sendMediaGroup"), postdata)
+	checkerr("SendAlbum/http.PostForm", err)
+}
+
 // ForwardMessage forwards an existing message to a chat
 func (t Telegram) ForwardMessage(data ClientForwardMessageData) {
 	postdata := url.Values{
@@ -159,13 +185,14 @@ func (t Telegram) SendChatAction(data ClientChatActionData) {
 }
 
 // AnswerInlineQuery replies to an inline query
-func (t Telegram) AnswerInlineQuery(data InlineQueryResponse) {
+func (t Telegram) AnswerInlineQuery(data InlineQueryResponse) error {
 	jsonresults, err := json.Marshal(data.Results)
 	if checkerr("AnswerInlineQuery/json.Marshal", err) {
-		return
+		return ErrMalformed
 	}
 	postdata := url.Values{
 		"inline_query_id": {data.QueryID},
+		"parse_mode":      {"HTML"},
 		"results":         {string(jsonresults)},
 	}
 	if data.CacheTime != nil {
@@ -184,8 +211,20 @@ func (t Telegram) AnswerInlineQuery(data InlineQueryResponse) {
 		postdata["switch_pm_parameter"] = []string{data.PMParam}
 	}
 
-	_, err = http.PostForm(t.apiURL("answerInlineQuery"), postdata)
-	checkerr("AnswerInlineQuery/http.PostForm", err)
+	result, err := http.PostForm(t.apiURL("answerInlineQuery"), postdata)
+	if checkerr("AnswerInlineQuery/http.PostForm", err) {
+		return ErrMalformed
+	}
+	var response APIResponse
+	err = json.NewDecoder(result.Body).Decode(&response)
+	result.Body.Close()
+	if checkerr("AnswerInlineQuery/json.Decode", err) {
+		return ErrMalformed
+	}
+	if !response.Ok && response.Description != nil {
+		return errors.New(*response.Description)
+	}
+	return nil
 }
 
 // GetFile sends a "getFile" API call to Telegram's servers and fetches the file
